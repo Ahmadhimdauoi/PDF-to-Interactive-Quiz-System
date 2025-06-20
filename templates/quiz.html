@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{{ course.name }}</h3>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h4>عدد الأسئلة: {{ course.num_questions }}</h4>
+                        <h5>نوع الأسئلة: 
+                            <span class="badge bg-primary">
+                                {% if course.question_type == 'mcq' %}
+                                    اختيار من متعدد
+                                {% else %}
+                                    صح/خطأ
+                                {% endif %}
+                            </span>
+                        </h5>
+                    </div>
+                    
+                    <form id="quizForm" data-course-id="{{ course.id }}" class="needs-validation" novalidate>
+                        {% for i in range(course.num_questions) %}
+                        <div class="question-card mb-4">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <h5>السؤال {{ i + 1 }}:</h5>
+                                    <p class="question-text">{{ course.questions[i].question }}</p>
+                                </label>
+                                <div class="options-container">
+                                    {% if course.question_type == 'mcq' %}
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="question{{ i }}" value="A" required>
+                                                <label class="form-check-label">{{ course.questions[i].options[0].text }}</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="question{{ i }}" value="B">
+                                                <label class="form-check-label">{{ course.questions[i].options[1].text }}</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="question{{ i }}" value="C">
+                                                <label class="form-check-label">{{ course.questions[i].options[2].text }}</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="question{{ i }}" value="D">
+                                                <label class="form-check-label">{{ course.questions[i].options[3].text }}</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="question{{ i }}" value="true" required>
+                                                <label class="form-check-label">صح</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="question{{ i }}" value="false">
+                                                <label class="form-check-label">خطأ</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="invalid-feedback">
+                                    يجب اختيار إجابة واحدة على الأقل
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> إرسال الإجابات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+
+    // Handle quiz submission
+    const quizForm = document.getElementById('quizForm');
+    quizForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Validate form
+        if (!this.checkValidity()) {
+            e.stopPropagation();
+            return;
+        }
+
+        const formData = new FormData();
+        const courseId = this.dataset.courseId;
+        
+        // Get all answers
+        const questions = document.querySelectorAll('.question-card');
+        questions.forEach((question, index) => {
+            const answer = question.querySelector('input[type="radio"]:checked');
+            if (answer) {
+                formData.append(`answer${index}`, answer.value);
+            }
+        });
+
+        // Add course ID
+        formData.append('course_id', courseId);
+        formData.append('num_questions', {{ course.num_questions }});
+
+        // Show loading state
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalText = submitButton.innerHTML;
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
+
+        // Send to server
+        fetch('/submit-quiz', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = '/student';
+            } else {
+                alert('حدث خطأ أثناء إرسال الإجابات');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء إرسال الإجابات');
+        })
+        .finally(() => {
+            // Reset button state
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalText;
+        });
+    });
+});
+</script>
+{% endblock %}

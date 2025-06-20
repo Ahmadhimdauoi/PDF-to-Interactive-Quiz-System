@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">قائمة المواد الدراسية</h3>
+                    <a href="{{ url_for('logout') }}" class="btn btn-sm btn-secondary">
+                        <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for course in courses %}
+                        <a href="{{ url_for('course_quiz', course_id=course.id) }}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ course.name }}</h5>
+                                <small>{{ course.num_questions }} سؤال</small>
+                            </div>
+                            <p class="mb-1">نوع الأسئلة: {{ course.question_type }}</p>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

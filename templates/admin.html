@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">لوحة تحكم المشرف</h3>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+                            <i class="fas fa-plus"></i> إضافة مادة جديدة
+                        </button>
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadQuestionsModal">
+                            <i class="fas fa-file-upload"></i> رفع أسئلة
+                        </button>
+                        <a href="{{ url_for('logout') }}" class="btn btn-secondary">
+                            <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card bg-light mb-4">
+                                <div class="card-body">
+                                    <h5 class="card-title">المواد المسجلة</h5>
+                                    <div class="list-group">
+                                        {% for course in courses %}
+                                        <div class="list-group-item">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <h6 class="mb-1">{{ course.name }}</h6>
+                                                <small class="text-muted">{{ course.created_at.strftime('%Y-%m-%d') }}</small>
+                                            </div>
+                                            <small class="text-muted">
+                                                نوع الأسئلة: 
+                                                {% if course.question_type == 'mcq' %}
+                                                    اختيار من متعدد
+                                                {% else %}
+                                                    صح/خطأ
+                                                {% endif %}
+                                            </small>
+                                            <div class="mt-2">
+                                                <button class="btn btn-sm btn-outline-primary" onclick="editCourse({{ course.id }})">
+                                                    <i class="fas fa-edit"></i> تعديل
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" onclick="deleteCourse({{ course.id }})">
+                                                    <i class="fas fa-trash"></i> حذف
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">إحصائيات</h5>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="stat-box">
+                                                <h6>عدد المواد</h6>
+                                                <h3>{{ courses|length }}</h3>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="stat-box">
+                                                <h6>عدد الطلاب</h6>
+                                                <h3>{{ students|length }}</h3>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Course -->
+    <div class="modal fade" id="addCourseModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">إضافة مادة جديدة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ url_for('create_course') }}" method="POST" enctype="multipart/form-data" id="addCourseForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="courseName" class="form-label">اسم المادة</label>
+                            <input type="text" class="form-control" id="courseName" name="courseName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="numQuestions" class="form-label">عدد الأسئلة</label>
+                            <input type="number" class="form-control" id="numQuestions" name="numQuestions" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="language" class="form-label">لغة الواجهة</label>
+                            <select class="form-select" id="language" name="language" required>
+                                <option value="ar">العربية</option>
+                                <option value="en">الإنجليزية</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="questionType" class="form-label">نوع الأسئلة</label>
+                            <select class="form-select" id="questionType" name="questionType" required>
+                                <option value="mcq">اختيار من متعدد</option>
+                                <option value="tf">صح/خطأ</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="pdfFile" class="form-label">رفع ملف PDF</label>
+                            <input type="file" class="form-control" id="pdfFile" name="pdfFile" accept=".pdf" required>
+                            <small class="text-muted">حجم الملف يجب أن لا يتجاوز 16MB</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="additionalFiles" class="form-label">رفع ملفات إضافية (اختياري)</label>
+                            <input type="file" class="form-control" id="additionalFiles" name="additionalFiles" accept=".pdf,.doc,.docx" multiple>
+                            <small class="text-muted">يمكن رفع عدة ملفات</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary">إضافة المادة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Uploading Questions -->
+    <div class="modal fade" id="uploadQuestionsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">رفع أسئلة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ url_for('upload_questions') }}" method="POST" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="questionsFile" class="form-label">ملف الأسئلة</label>
+                            <input type="file" class="form-control" id="questionsFile" name="questionsFile" accept=".txt,.csv" required>
+                            <small class="text-muted">يمكن رفع ملف نصي أو CSV يحتوي على الأسئلة</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="course" class="form-label">اختيار المادة</label>
+                            <select class="form-select" id="course" name="course" required>
+                                {% for course in courses %}
+                                <option value="{{ course.id }}">{{ course.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-success">رفع الأسئلة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Handle file upload validation
+document.getElementById('addCourseForm').addEventListener('submit', function(e) {
+    const pdfFile = document.getElementById('pdfFile').files[0];
+    if (pdfFile && pdfFile.size > 16 * 1024 * 1024) { // 16MB
+        alert('حجم الملف يجب أن لا يتجاوز 16MB');
+        e.preventDefault();
+    }
+});
+
+// Handle course deletion
+function deleteCourse(courseId) {
+    if (confirm('هل أنت متأكد من حذف هذه المادة؟')) {
+        fetch(`/delete-course/${courseId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('حدث خطأ أثناء حذف المادة');
+            }
+        });
+    }
+}
+
+// Handle course editing
+function editCourse(courseId) {
+    // TODO: Implement course editing functionality
+    alert(' Coming soon...');
+}
+</script>
+{% endblock %}
